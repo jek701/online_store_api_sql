@@ -70,7 +70,7 @@ router.post('/authenticate', async (req, res) => {
 
         // Generate a JWT token
         const token = jwt.sign({ id: user.id, login: user.login, role: user.role }, jwtSecret, {
-            expiresIn: '1h',
+            expiresIn: '365d',
         });
 
         // Send the JWT token in the response
@@ -91,24 +91,39 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
 
 router.get('/:id', authenticateToken, async (req, res) => {
     const userId = req.params.id;
-    const requestingUser = req.user;
-
-    // Check if the requesting user is an admin or requesting their own information
-    if (requestingUser.role !== 'admin' && requestingUser.id !== parseInt(userId, 10)) {
-        return res.status(403).json({ error: 'Insufficient permissions' });
-    }
 
     try {
-        const [rows] = await db.query('SELECT * FROM Users WHERE id = ?', [userId]);
+        // Fetch user and addresses in a single query using JOIN
+        const [rows] = await db.query(`
+      SELECT 
+        Users.id as user_id,
+        Users.login,
+        Users.email,
+        Users.role,
+        Addresses.id as address_id,
+        Addresses.name as address_name,
+        Addresses.created_date as address_created_date,
+        Addresses.lat,
+        Addresses.lng
+      FROM Users
+      LEFT JOIN Addresses ON Users.id = Addresses.user_id
+      WHERE Users.id = ?
+    `, [userId]);
 
         if (rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const user = rows[0];
+        // Extract user data and addresses from the query result
+        const { user_id, username, email, role } = rows[0];
+        const user = { user_id, username, email, role, addresses: [] };
 
-        // Remove sensitive data before sending the response
-        delete user.password;
+        rows.forEach(row => {
+            if (row.address_id) {
+                const { address_id, address_name, address_created_date, lat, lng } = row;
+                user.addresses.push({ address_id, address_name, address_created_date, lat, lng });
+            }
+        });
 
         res.json(user);
     } catch (err) {
@@ -150,8 +165,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
 
         if (password) {
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
-            updateData.password = hashedPassword;
+            updateData.password = await bcrypt.hash(password, saltRounds);
         }
 
         // Update the user in the database

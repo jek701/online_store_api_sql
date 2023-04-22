@@ -3,13 +3,18 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const userRoutes = require('./routes/users');
+const productRoutes = require('./routes/products')
+const addressRouter = require('./routes/addresses')
 
 const app = express();
 
+app.use('/uploads', express.static('uploads'));
 app.use(bodyParser.json());
 app.use(cors());
 
 app.use('/users', userRoutes);
+app.use('/products', productRoutes);
+app.use('/address', addressRouter)
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
