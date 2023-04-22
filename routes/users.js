@@ -68,6 +68,9 @@ router.post('/authenticate', async (req, res) => {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
+        // Fetch the user's addresses
+        const [addresses] = await db.query('SELECT * FROM Addresses WHERE user_id = ?', [user.id]);
+
         // Generate a JWT token
         const token = jwt.sign({ id: user.id, login: user.login, role: user.role }, jwtSecret, {
             expiresIn: '365d',
@@ -76,8 +79,8 @@ router.post('/authenticate', async (req, res) => {
         // Remove the password from the user object
         delete user.password;
 
-        // Send the JWT token and user info in the response
-        res.json({ token, user });
+        // Send the JWT token, user info, and addresses in the response
+        res.json({ token, user, addresses });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
