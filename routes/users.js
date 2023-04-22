@@ -73,12 +73,16 @@ router.post('/authenticate', async (req, res) => {
             expiresIn: '365d',
         });
 
-        // Send the JWT token in the response
-        res.json({ token });
+        // Remove the password from the user object
+        delete user.password;
+
+        // Send the JWT token and user info in the response
+        res.json({ token, user });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
