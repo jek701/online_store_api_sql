@@ -30,6 +30,8 @@
     "mysql2": "^3.2.3"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.1",
+    "@types/node": "^18.15.13",
     "nodemon": "^2.0.22"
   }
 }
