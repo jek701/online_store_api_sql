@@ -9,7 +9,7 @@ const { authenticateToken, requireRole } = require('../middlewares/auth');
 dotenv.config();
 
 const jwtSecret = process.env.JWT_SECRET;
-const saltRounds = 20;
+const saltRounds = 10;
 
 router.post('/register', async (req, res) => {
     const { login, password, email, number, name } = req.body;
@@ -68,19 +68,16 @@ router.post('/authenticate', async (req, res) => {
             return res.status(401).json({ error: 'Invalid password' });
         }
 
-        // Fetch the user's addresses
-        const [addresses] = await db.query('SELECT * FROM Addresses WHERE user_id = ?', [user.id]);
-
         // Generate a JWT token
         const token = jwt.sign({ id: user.id, login: user.login, role: user.role }, jwtSecret, {
             expiresIn: '365d',
         });
 
-        // Remove the password from the user object
         delete user.password;
+        // Remove the password from the user object
 
         // Send the JWT token, user info, and addresses in the response
-        res.json({ token, user, addresses });
+        res.json({ token });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -96,8 +93,8 @@ router.get('/', authenticateToken, requireRole('admin'), async (req, res) => {
     }
 });
 
-router.get('/:id', authenticateToken, async (req, res) => {
-    const userId = req.params.id;
+router.get('/me', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
 
     try {
         // Fetch user and addresses in a single query using JOIN
@@ -107,6 +104,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         Users.login,
         Users.email,
         Users.role,
+        Users.name,
         Addresses.id as address_id,
         Addresses.name as address_name,
         Addresses.created_date as address_created_date,
@@ -122,24 +120,25 @@ router.get('/:id', authenticateToken, async (req, res) => {
         }
 
         // Extract user data and addresses from the query result
-        const { user_id, username, email, role } = rows[0];
-        const user = { user_id, username, email, role, addresses: [] };
+        const { user_id, login, email, role, name } = rows[0];
+        const user = { user_id, login, email, role, name };
+        const addresses = [];
 
         rows.forEach(row => {
             if (row.address_id) {
                 const { address_id, address_name, address_created_date, lat, lng } = row;
-                user.addresses.push({ address_id, address_name, address_created_date, lat, lng });
+                addresses.push({ address_id, address_name, address_created_date, lat, lng });
             }
         });
 
-        res.json(user);
+        res.json({ user, addresses });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
-    const userId = req.params.id;
+router.put('/me', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
     const requestingUser = req.user;
     const { password, name, email, number } = req.body;
 
