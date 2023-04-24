@@ -1,0 +1,9 @@
+{
+  "production": {
+    "username": "root",
+    "password": "AppleJeK909592219",
+    "database": "online_store",
+    "host": "localhost",
+    "dialect": "mysql"
+  }
+}
