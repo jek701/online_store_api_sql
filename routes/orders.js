@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticateToken, isAdmin} = require('../middlewares/auth');
-const moment = require('moment');
 
 const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'canceled']
 
@@ -10,14 +9,12 @@ const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cance
 router.post('/', authenticateToken, async (req, res) => {
     const { user_id, total_price, delivery_type, address_lat, address_lng, items } = req.body;
 
-    const created_date = moment().format('YYYY-MM-DD HH:mm:ss');
-
     try {
 
         // Insert the new order into the Orders table
         const [orderResult] = await db.query(
-            'INSERT INTO Orders (user_id, created_date, total_price, delivery_type, address_lat, address_lng) VALUES (?, ?, ?, ?, ?, ?)',
-            [user_id, created_date, total_price, delivery_type, address_lat, address_lng]
+            'INSERT INTO Orders (user_id, total_price, delivery_type, address_lat, address_lng) VALUES (?, ?, ?, ?, ?)',
+            [user_id, total_price, delivery_type, address_lat, address_lng]
         );
 
         const orderId = orderResult.insertId;
