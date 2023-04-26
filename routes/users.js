@@ -40,8 +40,13 @@ router.post('/register', async (req, res) => {
             name,
         });
 
-        // Send a response with the new user's ID
-        res.status(201).json({id: newUser.id});
+        // Generate a JWT token
+        const token = jwt.sign({id: newUser.id, login: newUser.login, role: newUser.role}, jwtSecret, {
+            expiresIn: '365d',
+        });
+
+        // Send a response with the new user's ID and the JWT token
+        res.status(201).json({id: newUser.id, token});
     } catch (err) {
         res.status(500).json({error: err.message});
     }
