@@ -43,8 +43,8 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Route for getting all orders for a specific user
-router.get('/user/:user_id', authenticateToken, async (req, res) => {
-    const user_id = req.params.user_id;
+router.get('/user', authenticateToken, async (req, res) => {
+    const user_id = req.user.id;
 
     try {
         // Fetch orders for the specified user
