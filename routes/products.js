@@ -79,7 +79,7 @@ router.post('/', isAdmin, upload.array('images'), async (req, res) => {
 
         // Process the uploaded images
         if (files && files.length > 0) {
-            const imageRows = files.map((file) => [productId, path.join(`http://localhost:${process.env.PORT}/uploads`, file.filename)]);
+            const imageRows = files.map((file) => [productId, `http://localhost:${process.env.PORT}/uploads/${file.filename}`]);
             await db.query('INSERT INTO ProductImages (product_id, image_url) VALUES ?', [imageRows]);
         }
 
@@ -170,5 +170,26 @@ router.put('/:id', isAdmin, upload.array('images'), async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+router.delete('/:product_id', isAdmin, async (req, res) => {
+    const productId = req.params.product_id;
+
+    try {
+        // Check if the product exists
+        const [rows] = await db.query('SELECT * FROM Products WHERE id = ?', [productId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        // Delete the product
+        await db.query('DELETE FROM Products WHERE id = ?', [productId]);
+
+        res.status(200).json({ message: 'Product deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 module.exports = router;

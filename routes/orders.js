@@ -67,6 +67,32 @@ router.get('/user', authenticateToken, async (req, res) => {
     }
 });
 
+router.get('/', isAdmin, async (req, res) => {
+    try {
+        const [orders] = await db.query(`
+            SELECT
+                Orders.*,
+                Users.id as user_id,
+                Users.login,
+                Users.email,
+                Users.role,
+                Users.name,
+                Users.number
+            FROM Orders
+            JOIN Users ON Orders.user_id = Users.id
+        `);
+
+        if (!orders || orders.length === 0) {
+            return res.status(404).json({ error: 'No orders found' });
+        }
+
+        res.status(200).json({ orders });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Route to change Order info (items and status params ONLY), for Admin
 router.put('/:order_id', isAdmin, async (req, res) => {
     const orderId = req.params.order_id;
@@ -97,23 +123,49 @@ router.put('/:order_id', isAdmin, async (req, res) => {
     }
 });
 
-router.get('/:order_id', authenticateToken, async (req, res) => {
+router.get('/:order_id', isAdmin, async (req, res) => {
     const orderId = req.params.order_id;
-    const userId = req.user.id;
-    const userRole = req.user.role;
 
     try {
-        const [rows] = await db.query('SELECT * FROM Orders WHERE order_id = ?', [orderId]);
+        const [orderRows] = await db.query(`
+            SELECT
+                Orders.*,
+                Users.id as user_id,
+                Users.login,
+                Users.email,
+                Users.role,
+                Users.name,
+                Users.number
+            FROM Orders
+            JOIN Users ON Orders.user_id = Users.id
+            WHERE Orders.order_id = ?
+        `, [orderId]);
 
-        if (rows.length === 0) {
+        if (orderRows.length === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }
 
-        const order = rows[0];
+        const order = orderRows[0];
 
-        if (userRole !== 'admin' && order.user_id !== userId) {
-            return res.status(403).json({ error: 'Forbidden: You do not have access to this order' });
-        }
+        const [itemRows] = await db.query(`
+            SELECT
+                OrderItems.*,
+                Products.name as product_name,
+                Products.price as product_price
+            FROM OrderItems
+            JOIN Products ON OrderItems.product_id = Products.id
+            WHERE OrderItems.order_id = ?
+        `, [orderId]);
+
+        const items = itemRows.map(row => ({
+            id: row.id,
+            product_id: row.product_id,
+            product_name: row.product_name,
+            product_price: row.product_price,
+            quantity: row.quantity
+        }));
+
+        order.items = items;
 
         res.status(200).json(order);
     } catch (err) {
