@@ -10,6 +10,7 @@ const productRoutes = require('./routes/products')
 const addressRouter = require('./routes/addresses')
 const ordersRouter = require('./routes/orders');
 const consultant = require("./routes/consultant")
+const searchEngine = require("./routes/search")
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/products', productRoutes);
 app.use('/address', addressRouter)
 app.use('/orders', ordersRouter);
 app.use("/consultant", consultant)
+app.use("/search", searchEngine)
 
 // Set up the Socket.IO server
 io.on('connection', (socket) => {
@@ -33,9 +35,9 @@ io.on('connection', (socket) => {
         console.log('user disconnected');
     });
 
-    socket.on('get_conversation', async (userId) => {
+    socket.on('get_conversation', async (conversation_id) => {
         try {
-            const [conversationRows] = await db.query('SELECT * FROM ConsultantMessages WHERE user_id = ? ORDER BY timestamp ASC', [userId]);
+            const [conversationRows] = await db.query('SELECT * FROM ConsultantMessages WHERE conversation_id = ? ORDER BY timestamp ASC', [conversation_id]);
             socket.emit('conversation_history', conversationRows);
         } catch (err) {
             console.error(err);
