@@ -10,7 +10,6 @@ const productRoutes = require('./routes/products')
 const addressRouter = require('./routes/addresses')
 const ordersRouter = require('./routes/orders');
 const consultant = require("./routes/consultant")
-const searchEngine = require("./routes/search")
 
 const app = express();
 
@@ -25,7 +24,6 @@ app.use('/products', productRoutes);
 app.use('/address', addressRouter)
 app.use('/orders', ordersRouter);
 app.use("/consultant", consultant)
-app.use("/search", searchEngine)
 
 // Set up the Socket.IO server
 io.on('connection', (socket) => {

@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
             const [images] = await db.query('SELECT image_url FROM ProductImages WHERE product_id = ?', [product.id]);
             return {
                 ...product,
+                key_words: product.key_words.split(", "),
                 images: images.map((image) => image.image_url),
             };
         });
